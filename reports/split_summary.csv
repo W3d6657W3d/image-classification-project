@@ -1,0 +1,13 @@
+class_name,selected,train,val,test
+battery,600,420,90,90
+biological,600,420,90,90
+brown-glass,600,420,90,90
+cardboard,600,420,90,90
+clothes,600,420,90,90
+green-glass,600,420,90,90
+metal,600,420,90,90
+paper,600,420,90,90
+plastic,600,420,90,90
+shoes,600,420,90,90
+trash,600,420,90,90
+white-glass,600,420,90,90

@@ -107,7 +107,9 @@ image-classification-project/
 - [x] GitHub repository connected
 - [x] Initial project scope drafted
 - [x] Directory structure planned
-- [ ] Dataset selected
+- [x] Dataset selected
+- [x] Dataset distribution analyzed
+- [x] Balanced train/validation/test split prepared
 - [ ] Training pipeline implemented
 - [ ] Model evaluated
 - [ ] API implemented
