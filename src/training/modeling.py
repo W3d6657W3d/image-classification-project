@@ -69,7 +69,10 @@ def save_checkpoint(
 
 
 def load_checkpoint(checkpoint_path: Path, device: torch.device) -> tuple[nn.Module, dict]:
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    except TypeError:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
     class_names = checkpoint["class_names"]
     model = build_model(num_classes=len(class_names), pretrained=False)
     model.load_state_dict(checkpoint["model_state_dict"])
