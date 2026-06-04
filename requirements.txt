@@ -1,0 +1,9 @@
+torch>=2.3.0
+torchvision>=0.18.0
+numpy
+Pillow
+matplotlib
+scikit-learn
+fastapi
+uvicorn
+python-multipart
