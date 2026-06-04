@@ -110,9 +110,9 @@ image-classification-project/
 - [x] Dataset selected
 - [x] Dataset distribution analyzed
 - [x] Balanced train/validation/test split prepared
-- [ ] Training pipeline implemented
-- [ ] Model evaluated
-- [ ] API implemented
+- [x] Training pipeline implemented
+- [x] Model evaluated
+- [x] API implemented
 - [ ] Frontend implemented
 - [ ] Docker deployment completed
 
