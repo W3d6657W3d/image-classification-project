@@ -40,7 +40,7 @@ Planned stack:
 - Language: Python
 - Model: PyTorch, torchvision, transfer learning
 - API: FastAPI
-- Frontend: Streamlit or React, depending on delivery risk
+- Frontend: Streamlit
 - Database: SQLite
 - Evaluation: scikit-learn, matplotlib
 - Deployment: Docker
@@ -66,7 +66,7 @@ Planned stack:
 image-classification-project/
   app/
     backend/          FastAPI service
-    frontend/         Streamlit or React UI
+    frontend/         Streamlit UI
   data/
     raw/              Original dataset files, ignored by git
     processed/        Processed dataset files, ignored by git
@@ -113,8 +113,37 @@ image-classification-project/
 - [x] Training pipeline implemented
 - [x] Model evaluated
 - [x] API implemented
-- [ ] Frontend implemented
+- [x] Frontend implemented
 - [ ] Docker deployment completed
+
+## Local Demo
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Start the FastAPI backend:
+
+```powershell
+uvicorn app.backend.main:app --reload
+```
+
+Start the Streamlit frontend in another terminal:
+
+```powershell
+streamlit run app/frontend/streamlit_app.py
+```
+
+The Streamlit app opens at:
+
+```text
+http://localhost:8501
+```
+
+The frontend expects the backend at `http://127.0.0.1:8000` by default. Set
+`BACKEND_URL` to use a different backend address.
 
 ## Notes
 
