@@ -230,3 +230,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local portfolio materials
+*.docx
+*.pptx
+*.xlsx
+resume_render_qa/
