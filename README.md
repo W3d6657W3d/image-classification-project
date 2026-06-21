@@ -114,7 +114,7 @@ image-classification-project/
 - [x] Model evaluated
 - [x] API implemented
 - [x] Frontend implemented
-- [ ] Docker deployment completed
+- [x] Docker deployment completed
 
 ## Local Demo
 
@@ -144,6 +144,32 @@ http://localhost:8501
 
 The frontend expects the backend at `http://127.0.0.1:8000` by default. Set
 `BACKEND_URL` to use a different backend address.
+
+## Docker Demo
+
+The Docker setup runs the FastAPI backend and Streamlit frontend as separate
+services. The trained model is mounted from the local `models/` folder instead
+of being copied into the image.
+
+Required local checkpoint:
+
+```text
+models/best_mobilenet_v2.pth
+```
+
+Start both services:
+
+```powershell
+docker compose up --build
+```
+
+Open the frontend:
+
+```text
+http://localhost:8501
+```
+
+See [docs/deployment.md](docs/deployment.md) for deployment details.
 
 ## Notes
 
