@@ -1,4 +1,9 @@
-"""Evaluate a saved checkpoint on the test split."""
+"""Evaluate a saved checkpoint on the test split.
+
+This script is intentionally separate from training: it loads the selected
+checkpoint once and evaluates it on the held-out test split to produce the final
+metrics used in the README and interview materials.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +29,7 @@ def write_report(
     metrics: dict[str, object],
     class_names: list[str],
 ) -> None:
+    """Write a Markdown report with overall and per-class test metrics."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     per_class = metrics["per_class"]
 
@@ -70,6 +76,7 @@ def write_report(
 
 
 def main() -> None:
+    """Load checkpoint, run test inference, and save evaluation artifacts."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data-dir",
@@ -111,6 +118,8 @@ def main() -> None:
         transform=build_transforms(image_size, train=False),
     )
     if test_dataset.classes != class_names:
+        # ImageFolder derives class order from folder names. This guard prevents
+        # silently evaluating with labels that do not match the checkpoint.
         raise ValueError(
             "Test dataset classes do not match checkpoint classes: "
             f"{test_dataset.classes} != {class_names}"

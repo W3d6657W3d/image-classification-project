@@ -1,4 +1,9 @@
-"""SQLite persistence for prediction history."""
+"""SQLite persistence for prediction history.
+
+SQLite is enough for this portfolio demo because the service only needs local,
+lightweight storage of uploaded filenames, Top-K predictions, inference latency,
+and timestamps.
+"""
 
 from __future__ import annotations
 
@@ -11,11 +16,13 @@ from typing import Iterator
 
 
 def utc_now_iso() -> str:
+    """Return the current UTC timestamp in ISO-8601 format."""
     return datetime.now(timezone.utc).isoformat()
 
 
 @contextmanager
 def connect(database_path: Path) -> Iterator[sqlite3.Connection]:
+    """Open a SQLite connection and commit automatically after use."""
     database_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
@@ -27,6 +34,7 @@ def connect(database_path: Path) -> Iterator[sqlite3.Connection]:
 
 
 def init_db(database_path: Path) -> None:
+    """Create the prediction history table if it does not already exist."""
     with connect(database_path) as connection:
         connection.execute(
             """
@@ -51,6 +59,7 @@ def insert_prediction(
     predictions: list[dict[str, float | str]],
     inference_ms: float,
 ) -> int:
+    """Insert one prediction record and return its database row id."""
     with connect(database_path) as connection:
         cursor = connection.execute(
             """
@@ -77,6 +86,7 @@ def insert_prediction(
 
 
 def list_predictions(database_path: Path, limit: int = 20) -> list[dict[str, object]]:
+    """Fetch recent prediction records in reverse chronological order."""
     with connect(database_path) as connection:
         rows = connection.execute(
             """
@@ -94,6 +104,8 @@ def list_predictions(database_path: Path, limit: int = 20) -> list[dict[str, obj
             "filename": row["filename"],
             "stored_path": row["stored_path"],
             "top_k": row["top_k"],
+            # Predictions are stored as JSON to keep the schema simple while
+            # preserving the full Top-K response structure.
             "predictions": json.loads(row["predictions_json"]),
             "inference_ms": row["inference_ms"],
             "created_at": row["created_at"],

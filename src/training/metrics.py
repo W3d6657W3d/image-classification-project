@@ -1,4 +1,9 @@
-"""Small metric helpers for classification evaluation."""
+"""Small metric helpers for classification evaluation.
+
+The project keeps these calculations local and explicit so the training and
+evaluation scripts report accuracy, macro metrics, per-class metrics, and the
+confusion matrix in a consistent format.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ def confusion_matrix(
     y_pred: list[int],
     num_classes: int,
 ) -> np.ndarray:
+    """Build a confusion matrix where rows are true labels and columns are predictions."""
     matrix = np.zeros((num_classes, num_classes), dtype=np.int64)
     for true_label, pred_label in zip(y_true, y_pred):
         matrix[true_label, pred_label] += 1
@@ -20,6 +26,7 @@ def confusion_matrix(
 
 
 def classification_metrics(matrix: np.ndarray) -> dict[str, object]:
+    """Calculate overall and per-class metrics from a confusion matrix."""
     true_positive = np.diag(matrix).astype(float)
     false_positive = matrix.sum(axis=0) - true_positive
     false_negative = matrix.sum(axis=1) - true_positive
@@ -66,6 +73,7 @@ def save_metrics_csv(
     metrics: dict[str, object],
     output_path: Path,
 ) -> None:
+    """Write per-class precision, recall, F1, and support to CSV."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     per_class = metrics["per_class"]
 
@@ -93,6 +101,7 @@ def save_confusion_matrix_plot(
     output_path: Path,
     title: str = "Confusion Matrix",
 ) -> None:
+    """Render the confusion matrix as a labeled heatmap image."""
     import matplotlib.pyplot as plt
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -114,6 +123,7 @@ def save_confusion_matrix_plot(
     threshold = matrix.max() / 2 if matrix.size and matrix.max() else 0
     for row in range(matrix.shape[0]):
         for col in range(matrix.shape[1]):
+            # Switch text color on darker cells so the counts remain readable.
             axis.text(
                 col,
                 row,

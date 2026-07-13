@@ -1,4 +1,9 @@
-"""Run Top-K prediction for a single image using a saved checkpoint."""
+"""Run Top-K prediction for a single image using a saved checkpoint.
+
+This CLI is useful for quick offline sanity checks without starting FastAPI or
+Streamlit. It shares the same checkpoint loader and deterministic transforms as
+the backend inference service.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +22,7 @@ def predict_image(
     top_k: int = 3,
     device: torch.device | None = None,
 ) -> list[dict[str, float | str]]:
+    """Load a checkpoint, classify one image, and return Top-K probabilities."""
     device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, checkpoint = load_checkpoint(checkpoint_path, device)
     class_names = checkpoint["class_names"]
@@ -28,6 +34,7 @@ def predict_image(
 
     with torch.no_grad():
         logits = model(tensor)
+        # Convert logits to probabilities so CLI output matches the API format.
         probabilities = torch.softmax(logits, dim=1).squeeze(0)
         values, indices = torch.topk(probabilities, k=min(top_k, len(class_names)))
 
@@ -41,6 +48,7 @@ def predict_image(
 
 
 def main() -> None:
+    """Parse CLI arguments and print class probabilities."""
     parser = argparse.ArgumentParser()
     parser.add_argument("image_path", type=Path)
     parser.add_argument(

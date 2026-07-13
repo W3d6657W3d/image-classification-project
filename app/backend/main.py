@@ -1,4 +1,9 @@
-"""FastAPI inference service for garbage image classification."""
+"""FastAPI inference service for garbage image classification.
+
+The API exposes health, class metadata, Top-K image prediction, and prediction
+history endpoints. Route functions stay small by delegating model inference to
+``ImageClassifier`` and persistence to ``app.backend.database``.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +38,7 @@ classifier: ImageClassifier | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Initialize database and load the model once during application startup."""
     global classifier
     init_db(DATABASE_PATH)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,6 +53,7 @@ app.router.lifespan_context = lifespan
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    """Return service status, runtime device, and loaded class names."""
     return HealthResponse(
         status="ok",
         model_loaded=classifier is not None,
@@ -57,12 +64,14 @@ def health() -> HealthResponse:
 
 @app.get("/classes", response_model=list[str])
 def classes() -> list[str]:
+    """Return the class list stored in the model checkpoint."""
     if classifier is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
     return classifier.class_names
 
 
 def save_upload(file: UploadFile) -> Path:
+    """Validate and persist an uploaded image before running inference."""
     original_name = file.filename or "upload.jpg"
     suffix = Path(original_name).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
@@ -73,6 +82,7 @@ def save_upload(file: UploadFile) -> Path:
 
     target_path = UPLOAD_DIR / f"{uuid4().hex}{suffix}"
     with target_path.open("wb") as output_file:
+        # Copy as a stream to avoid loading large uploads fully into memory.
         shutil.copyfileobj(file.file, output_file)
     return target_path
 
@@ -82,6 +92,7 @@ def predict(
     file: UploadFile = File(...),
     top_k: int = Query(default=DEFAULT_TOP_K, ge=1, le=MAX_TOP_K),
 ) -> PredictionResponse:
+    """Run Top-K prediction for an uploaded image and record the result."""
     if classifier is None:
         raise HTTPException(status_code=503, detail="Model is not loaded")
 
@@ -89,6 +100,7 @@ def predict(
     try:
         predictions, inference_ms = classifier.predict_path(stored_path, top_k=top_k)
     except ValueError as exc:
+        # Remove invalid uploads so the upload folder only keeps usable inputs.
         stored_path.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -113,4 +125,5 @@ def predict(
 
 @app.get("/history", response_model=list[HistoryItem])
 def history(limit: int = Query(default=20, ge=1, le=100)) -> list[HistoryItem]:
+    """Return recent prediction records from SQLite."""
     return [HistoryItem(**item) for item in list_predictions(DATABASE_PATH, limit=limit)]

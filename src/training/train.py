@@ -1,4 +1,9 @@
-"""Train a MobileNetV2 baseline on the processed garbage dataset."""
+"""Train a MobileNetV2 baseline on the processed garbage dataset.
+
+The script uses the balanced processed split, applies augmentation only to the
+training loader, tracks validation metrics each epoch, and saves the checkpoint
+with the best validation macro F1 score.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +33,12 @@ def run_epoch(
     optimizer: torch.optim.Optimizer | None = None,
     max_batches: int | None = None,
 ) -> tuple[float, dict[str, float]]:
+    """Run one training or evaluation epoch and return loss plus metrics.
+
+    Passing an optimizer enables gradient updates; passing ``None`` switches the
+    model into evaluation mode and disables backward propagation. The same
+    metric path is used for train and validation so the numbers are comparable.
+    """
     is_training = optimizer is not None
     model.train(is_training)
 
@@ -54,6 +65,8 @@ def run_epoch(
                 loss.backward()
                 optimizer.step()
 
+        # Weight batch loss by batch size so a smaller final batch does not
+        # distort the epoch average.
         running_loss += loss.item() * inputs.size(0)
         y_true.extend(labels.cpu().tolist())
         y_pred.extend(predictions.cpu().tolist())
@@ -71,6 +84,7 @@ def run_epoch(
 
 
 def main() -> None:
+    """Parse training arguments, train the model, and write artifacts."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data-dir",
@@ -177,6 +191,8 @@ def main() -> None:
 
         if val_metrics["macro_f1"] > best_val_f1:
             best_val_f1 = val_metrics["macro_f1"]
+            # Model selection is based on the validation split only. The test
+            # split stays untouched until the separate evaluation script runs.
             save_checkpoint(
                 args.output_model,
                 model,

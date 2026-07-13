@@ -1,4 +1,9 @@
-"""Create a balanced train/validation/test split for image classification."""
+"""Create a balanced train/validation/test split for image classification.
+
+The raw dataset has uneven class counts, so this script samples up to a fixed
+maximum per class and then creates deterministic train/validation/test folders
+that can be consumed directly by ``torchvision.datasets.ImageFolder``.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 def list_images(class_dir: Path) -> list[Path]:
+    """Return supported image files under a class directory."""
     return sorted(
         path
         for path in class_dir.rglob("*")
@@ -21,6 +27,7 @@ def list_images(class_dir: Path) -> list[Path]:
 
 
 def copy_split(class_name: str, split_name: str, paths: list[Path], output_dir: Path) -> None:
+    """Copy one class split into ImageFolder-compatible directory structure."""
     target_dir = output_dir / split_name / class_name
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -31,6 +38,7 @@ def copy_split(class_name: str, split_name: str, paths: list[Path], output_dir: 
 
 
 def write_split_summary(rows: list[dict[str, object]], output_path: Path) -> None:
+    """Write per-class split counts for documentation and reproducibility."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
@@ -42,6 +50,7 @@ def write_split_summary(rows: list[dict[str, object]], output_path: Path) -> Non
 
 
 def save_split_distribution_plot(rows: list[dict[str, object]], output_path: Path) -> None:
+    """Save a stacked bar chart showing train/validation/test distribution."""
     import matplotlib.pyplot as plt
 
     class_names = [str(row["class_name"]) for row in rows]
@@ -67,6 +76,7 @@ def save_split_distribution_plot(rows: list[dict[str, object]], output_path: Pat
 
 
 def main() -> None:
+    """Build processed dataset folders and split summary artifacts."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--raw-dir",
@@ -111,7 +121,9 @@ def main() -> None:
 
     for class_dir in class_dirs:
         image_paths = list_images(class_dir)
+        # Shuffle with a fixed seed so the split can be reproduced later.
         rng.shuffle(image_paths)
+        # Capping each class reduces the raw dataset imbalance before splitting.
         selected_paths = image_paths[: args.max_per_class]
 
         selected_count = len(selected_paths)

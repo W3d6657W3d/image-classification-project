@@ -1,4 +1,9 @@
-"""Streamlit frontend for the garbage classification demo."""
+"""Streamlit frontend for the garbage classification demo.
+
+The frontend is intentionally thin: it collects an uploaded image, calls the
+FastAPI backend, renders Top-K probabilities, and displays recent prediction
+history from the backend API.
+"""
 
 from __future__ import annotations
 
@@ -14,10 +19,12 @@ REQUEST_TIMEOUT_SECONDS = 30
 
 
 def get_backend_url() -> str:
+    """Resolve backend URL from environment for local and Docker runs."""
     return os.getenv("BACKEND_URL", DEFAULT_BACKEND_URL).rstrip("/")
 
 
 def request_json(method: str, url: str, **kwargs: Any) -> tuple[dict[str, Any] | list[Any] | None, str | None]:
+    """Call the backend and normalize success/error handling for the UI."""
     try:
         response = requests.request(
             method,
@@ -39,6 +46,7 @@ def request_json(method: str, url: str, **kwargs: Any) -> tuple[dict[str, Any] |
 
 
 def get_health(backend_url: str) -> dict[str, Any] | None:
+    """Fetch backend health and render sidebar errors if unavailable."""
     data, error = request_json("GET", f"{backend_url}/health")
     if error:
         st.sidebar.error(error)
@@ -54,6 +62,7 @@ def predict_image(
     uploaded_file: Any,
     top_k: int,
 ) -> tuple[dict[str, Any] | None, str | None]:
+    """Send the uploaded image to the backend prediction endpoint."""
     files = {
         "file": (
             uploaded_file.name,
@@ -65,6 +74,7 @@ def predict_image(
 
 
 def get_history(backend_url: str, limit: int) -> tuple[list[dict[str, Any]], str | None]:
+    """Fetch recent prediction history from the backend."""
     data, error = request_json("GET", f"{backend_url}/history", params={"limit": limit})
     if error:
         return [], error
@@ -74,6 +84,7 @@ def get_history(backend_url: str, limit: int) -> tuple[list[dict[str, Any]], str
 
 
 def render_prediction_result(result: dict[str, Any]) -> None:
+    """Render the top prediction, inference latency, and full Top-K table."""
     predictions = result.get("predictions", [])
     if not predictions:
         st.warning("No predictions returned.")
@@ -82,6 +93,8 @@ def render_prediction_result(result: dict[str, Any]) -> None:
     top_prediction = predictions[0]
     confidence = float(top_prediction["probability"])
 
+    # Keep the highest-confidence class prominent, while the table preserves
+    # the full Top-K distribution for inspection.
     left, right = st.columns([2, 1])
     with left:
         st.subheader(top_prediction["class_name"])
@@ -101,6 +114,7 @@ def render_prediction_result(result: dict[str, Any]) -> None:
 
 
 def render_history(backend_url: str) -> None:
+    """Render recent predictions stored by the backend service."""
     st.header("Recent Prediction History")
     history_limit = st.slider("History items", min_value=5, max_value=50, value=10, step=5)
     history, error = get_history(backend_url, history_limit)
@@ -136,6 +150,7 @@ def render_history(backend_url: str) -> None:
 
 
 def main() -> None:
+    """Build the Streamlit page and wire UI events to backend calls."""
     st.set_page_config(
         page_title="Garbage Classification Demo",
         layout="wide",
@@ -189,6 +204,8 @@ def main() -> None:
                 "last_prediction" in st.session_state
                 and st.session_state["last_prediction"].get("filename") == uploaded_file.name
             ):
+                # Preserve the last result across Streamlit reruns caused by
+                # widget changes such as moving the Top-K slider.
                 render_prediction_result(st.session_state["last_prediction"])
 
     st.divider()

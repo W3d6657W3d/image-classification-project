@@ -1,4 +1,8 @@
-"""Analyze raw image classification data and create basic EDA figures."""
+"""Analyze raw image classification data and create basic EDA figures.
+
+The outputs from this script document the raw data volume, class imbalance,
+basic image validity, and visual samples before any model training starts.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +18,7 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 
 def list_images(class_dir: Path) -> list[Path]:
+    """Return supported image files under one class directory."""
     return sorted(
         path
         for path in class_dir.rglob("*")
@@ -22,6 +27,7 @@ def list_images(class_dir: Path) -> list[Path]:
 
 
 def check_image(path: Path) -> tuple[bool, tuple[int, int] | None]:
+    """Validate that an image can be opened and return its width/height."""
     try:
         with Image.open(path) as image:
             image.verify()
@@ -32,6 +38,7 @@ def check_image(path: Path) -> tuple[bool, tuple[int, int] | None]:
 
 
 def write_distribution_csv(rows: list[dict[str, object]], output_path: Path) -> None:
+    """Write class distribution and image-size summary to CSV."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
@@ -53,6 +60,7 @@ def write_distribution_csv(rows: list[dict[str, object]], output_path: Path) -> 
 
 
 def save_distribution_plot(rows: list[dict[str, object]], output_path: Path) -> None:
+    """Save a bar chart of raw image counts by class."""
     import matplotlib.pyplot as plt
 
     class_names = [str(row["class_name"]) for row in rows]
@@ -84,6 +92,7 @@ def save_sample_grid(
     samples_per_class: int,
     seed: int,
 ) -> None:
+    """Save a grid of randomly sampled images for qualitative inspection."""
     import matplotlib.pyplot as plt
 
     rng = random.Random(seed)
@@ -115,6 +124,7 @@ def save_sample_grid(
 
 
 def main() -> None:
+    """Run raw dataset analysis and write CSV/figure artifacts."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--raw-dir",
@@ -160,6 +170,8 @@ def main() -> None:
         heights: list[int] = []
 
         for image_path in image_paths:
+            # PIL verification catches unreadable or corrupted files before
+            # they can fail later inside a training dataloader.
             is_valid, size = check_image(image_path)
             if is_valid and size is not None:
                 valid_count += 1
